@@ -156,6 +156,9 @@
 
 - (void)setState:(MJRefreshState)state
 {
+    if ([self needDelaySetState:state]) {
+        return;
+    }
     MJRefreshCheckState
     
     // 设置状态文字

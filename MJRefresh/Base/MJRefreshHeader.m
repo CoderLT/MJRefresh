@@ -38,6 +38,8 @@
     
     // 设置高度
     self.mj_h = MJRefreshHeaderHeight;
+    
+    self.delay = 0.35f;
 }
 
 - (void)placeSubviews
@@ -98,8 +100,30 @@
     }
 }
 
+- (BOOL)needDelaySetState:(MJRefreshState)state {
+    if (self.updateBeginTime
+        && state == MJRefreshStateIdle
+        && self.state == MJRefreshStateRefreshing) {
+        CGFloat offset = self.delay + self.updateBeginTime.timeIntervalSinceNow;
+        if (offset > 0.05) {
+            __weak typeof(self) weakSelf = self;
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(MIN(self.delay, offset) * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                __strong typeof(weakSelf) strongSelf = weakSelf;
+                [strongSelf setState:state];
+            });
+            return YES;
+        }
+        self.updateBeginTime = nil;
+    }
+    return NO;
+}
+
 - (void)setState:(MJRefreshState)state
 {
+    if ([self needDelaySetState:state]) {
+        return;
+    }
+    
     MJRefreshCheckState
     
     // 根据状态做事情
@@ -125,17 +149,18 @@
         }];
     } else if (state == MJRefreshStateRefreshing) {
          dispatch_async(dispatch_get_main_queue(), ^{
-            [UIView animateWithDuration:MJRefreshFastAnimationDuration animations:^{
-                CGFloat top = self.scrollViewOriginalInset.top + self.mj_h;
-                // 增加滚动区域top
-                self.scrollView.mj_insetT = top;
-                // 设置滚动位置
-                CGPoint offset = self.scrollView.contentOffset;
-                offset.y = -top;
-                [self.scrollView setContentOffset:offset animated:NO];
-            } completion:^(BOOL finished) {
-                [self executeRefreshingCallback];
-            }];
+             self.updateBeginTime = [NSDate date];
+             [self executeRefreshingCallback];
+             [UIView animateWithDuration:MJRefreshFastAnimationDuration animations:^{
+                 CGFloat top = self.scrollViewOriginalInset.top + self.mj_h;
+                 // 增加滚动区域top
+                 self.scrollView.mj_insetT = top;
+                 // 设置滚动位置
+                 CGPoint offset = self.scrollView.contentOffset;
+                 offset.y = -top;
+                 [self.scrollView setContentOffset:offset animated:NO];
+             } completion:^(BOOL finished) {
+             }];
          });
     }
 }

@@ -22,4 +22,9 @@
 
 /** 忽略多少scrollView的contentInset的top */
 @property (assign, nonatomic) CGFloat ignoredScrollViewContentInsetTop;
+
+// 验证加载
+@property (nonatomic, assign) CGFloat delay;// default 0.3f
+@property (nonatomic, strong) NSDate *updateBeginTime;
+- (BOOL)needDelaySetState:(MJRefreshState)state;
 @end

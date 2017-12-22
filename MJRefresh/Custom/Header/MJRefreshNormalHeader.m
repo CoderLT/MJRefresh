@@ -88,6 +88,10 @@
 
 - (void)setState:(MJRefreshState)state
 {
+    if ([self needDelaySetState:state]) {
+        return;
+    }
+    
     MJRefreshCheckState
     
     // 根据状态做事情
